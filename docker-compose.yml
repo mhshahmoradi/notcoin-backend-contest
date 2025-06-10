@@ -1,0 +1,73 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    restart: unless-stopped
+    ports:
+      - ${PORT}:${PORT}
+    environment:
+      APP_ENV: ${APP_ENV}
+      PORT: ${PORT}
+      NOTBACK_DB_HOST: ${NOTBACK_DB_HOST}
+      NOTBACK_DB_PORT: 5432
+      NOTBACK_DB_DATABASE: ${NOTBACK_DB_DATABASE}
+      NOTBACK_DB_USERNAME: ${NOTBACK_DB_USERNAME}
+      NOTBACK_DB_PASSWORD: ${NOTBACK_DB_PASSWORD}
+      NOTBACK_DB_SCHEMA: ${NOTBACK_DB_SCHEMA}
+      NOTBACK_REDIS_HOST: redis_bp
+      NOTBACK_REDIS_PORT: 6379
+      NOTBACK_REDIS_PASSWORD: ""
+    depends_on:
+      psql_bp:
+        condition: service_healthy
+      redis_bp:                   
+        condition: service_healthy
+    networks:
+      - blueprint
+
+  psql_bp:
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${NOTBACK_DB_DATABASE}
+      POSTGRES_USER: ${NOTBACK_DB_USERNAME}
+      POSTGRES_PASSWORD: ${NOTBACK_DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - psql_volume_bp:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${NOTBACK_DB_USERNAME} -d ${NOTBACK_DB_DATABASE}'"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - blueprint
+
+  # ADD REDIS SERVICE
+  redis_bp:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Change from "6379:6379" to "6380:6379"
+    volumes:
+      - redis_volume_bp:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    command: redis-server --appendonly yes
+    networks:
+      - blueprint
+
+volumes:
+  psql_volume_bp:
+  redis_volume_bp:
+networks:
+  blueprint:
