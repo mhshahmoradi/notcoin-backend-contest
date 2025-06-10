@@ -28,6 +28,7 @@ A high-performance flash sale system built with Go, PostgreSQL, and Redis. Handl
 ### Prerequisites
 - **Docker** - [Install Docker](https://docs.docker.com/get-docker/)
 - **Docker Compose** - [Install Docker Compose](https://docs.docker.com/compose/install/)
+- **k6** - [Install k6](https://k6.io/docs/get-started/installation/) (for performance testing)
 
 ### Run Application
 ```bash
